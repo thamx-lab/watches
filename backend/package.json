@@ -30,9 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.7.4",
     "morgan": "^1.10.0",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
+    "zod": "^3.24.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
