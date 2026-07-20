@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { db } from '../data/db.js';
+import { MediaTheme } from '../models/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
 export const getMediaByTheme = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const theme = req.params.theme as string;
-  const media = db.getMediaContentByTheme(theme);
+  let media = await MediaTheme.findOne({ themeKey: theme });
+  
+  if (!media) {
+    // Fallback to classic if theme not found
+    media = await MediaTheme.findOne({ themeKey: 'classic' });
+  }
 
   res.status(200).json({
     success: true,
@@ -14,7 +19,12 @@ export const getMediaByTheme = asyncHandler(async (req: Request, res: Response, 
 });
 
 export const getAllMedia = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const collections = db.getMediaContentCollection();
+  const collectionsArray = await MediaTheme.find();
+  const collections: Record<string, any> = {};
+  
+  collectionsArray.forEach((item) => {
+    collections[item.themeKey] = item;
+  });
 
   res.status(200).json({
     success: true,
@@ -30,11 +40,15 @@ export const updateThemeMedia = asyncHandler(async (req: Request, res: Response,
     return next(new ApiError(400, 'Valid media content object is required.'));
   }
 
-  db.setMediaContent(theme, content);
+  const updatedMedia = await MediaTheme.findOneAndUpdate(
+    { themeKey: theme },
+    { ...content, themeKey: theme },
+    { new: true, upsert: true }
+  );
 
   res.status(200).json({
     success: true,
     message: `Media content for theme '${theme}' updated.`,
-    media: content,
+    media: updatedMedia,
   });
 });

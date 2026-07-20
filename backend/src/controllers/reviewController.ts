@@ -1,11 +1,11 @@
 import { Response, NextFunction } from 'express';
-import { db } from '../data/db.js';
-import { AuthRequest, IReview } from '../types/index.js';
+import { Review, Watch, User } from '../models/index.js';
+import { AuthRequest } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
 export const getReviewsByWatchId = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const watchId = req.params.watchId as string;
-  const reviews = db.getReviewsByWatchId(watchId);
+  const reviews = await Review.find({ watchId });
 
   res.status(200).json({
     success: true,
@@ -28,14 +28,14 @@ export const addReview = asyncHandler(async (req: AuthRequest, res: Response, ne
     return next(new ApiError(400, 'Review comment is required.'));
   }
 
-  const watch = db.getWatchById(watchId);
+  const watch = await Watch.findOne({ id: watchId });
   if (!watch) {
     return next(new ApiError(404, 'Watch not found.'));
   }
 
-  const user = db.getUserById(req.user.id);
+  const user = await User.findOne({ id: req.user.id });
 
-  const newReview: IReview = {
+  const newReview = {
     id: `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     watchId,
     userId: req.user.id,
@@ -46,7 +46,16 @@ export const addReview = asyncHandler(async (req: AuthRequest, res: Response, ne
     createdAt: new Date().toISOString(),
   };
 
-  db.addReview(newReview);
+  await Review.create(newReview);
+
+  // Update watch aggregate rating
+  const watchReviews = await Review.find({ watchId });
+  const totalRating = watchReviews.reduce((sum: number, r: any) => sum + r.rating, 0);
+  const avgRating = Number((totalRating / watchReviews.length).toFixed(1));
+  await Watch.findOneAndUpdate(
+    { id: watchId },
+    { rating: avgRating, reviewCount: watchReviews.length, updatedAt: new Date().toISOString() }
+  );
 
   res.status(201).json({
     success: true,

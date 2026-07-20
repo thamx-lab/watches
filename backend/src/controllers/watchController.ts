@@ -1,89 +1,77 @@
 import { Request, Response, NextFunction } from 'express';
-import { db } from '../data/db.js';
+import { Watch } from '../models/index.js';
 import { IWatch } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
 export const getWatches = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  let watches = db.getWatches();
-
   const { search, category, brand, theme, minPrice, maxPrice, featured, sort, page = '1', limit = '20' } = req.query;
 
+  const query: any = {};
+
   if (search) {
-    const q = (search as string).toLowerCase();
-    watches = watches.filter(
-      (w) =>
-        w.name.toLowerCase().includes(q) ||
-        w.brand.toLowerCase().includes(q) ||
-        w.description.toLowerCase().includes(q) ||
-        w.referenceNumber.toLowerCase().includes(q)
-    );
+    const q = new RegExp(search as string, 'i');
+    query.$or = [
+      { name: q },
+      { brand: q },
+      { description: q },
+      { referenceNumber: q }
+    ];
   }
 
   if (category) {
-    watches = watches.filter((w) => w.category.toLowerCase() === (category as string).toLowerCase());
+    query.category = new RegExp(category as string, 'i');
   }
 
   if (brand) {
-    watches = watches.filter((w) => w.brand.toLowerCase() === (brand as string).toLowerCase());
+    query.brand = new RegExp(brand as string, 'i');
   }
 
   if (theme) {
-    watches = watches.filter((w) => w.theme === (theme as string));
+    query.theme = theme as string;
   }
 
   if (featured !== undefined) {
-    const isFeatured = featured === 'true';
-    watches = watches.filter((w) => w.featured === isFeatured);
+    query.featured = featured === 'true';
   }
 
-  if (minPrice) {
-    const min = parseFloat(minPrice as string);
-    if (!isNaN(min)) watches = watches.filter((w) => w.price >= min);
+  if (minPrice || maxPrice) {
+    query.price = {};
+    if (minPrice) query.price.$gte = parseFloat(minPrice as string);
+    if (maxPrice) query.price.$lte = parseFloat(maxPrice as string);
   }
 
-  if (maxPrice) {
-    const max = parseFloat(maxPrice as string);
-    if (!isNaN(max)) watches = watches.filter((w) => w.price <= max);
-  }
-
+  let sortQuery: any = {};
   if (sort) {
     switch (sort as string) {
-      case 'price-asc':
-        watches.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        watches.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating-desc':
-        watches.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'newest':
-        watches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      default:
-        break;
+      case 'price-asc': sortQuery = { price: 1 }; break;
+      case 'price-desc': sortQuery = { price: -1 }; break;
+      case 'rating-desc': sortQuery = { rating: -1 }; break;
+      case 'newest': sortQuery = { createdAt: -1 }; break;
+      default: break;
     }
   }
 
   const pageNum = parseInt(page as string, 10) || 1;
   const limitNum = parseInt(limit as string, 10) || 20;
-  const total = watches.length;
-  const totalPages = Math.ceil(total / limitNum);
   const startIndex = (pageNum - 1) * limitNum;
-  const paginatedWatches = watches.slice(startIndex, startIndex + limitNum);
+
+  const total = await Watch.countDocuments(query);
+  const totalPages = Math.ceil(total / limitNum);
+
+  const watches = await Watch.find(query).sort(sortQuery).skip(startIndex).limit(limitNum);
 
   res.status(200).json({
     success: true,
-    count: paginatedWatches.length,
+    count: watches.length,
     total,
     page: pageNum,
     totalPages,
-    watches: paginatedWatches,
+    watches,
   });
 });
 
 export const getFeaturedWatches = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const watches = db.getWatches().filter((w) => w.featured);
+  const watches = await Watch.find({ featured: true });
 
   res.status(200).json({
     success: true,
@@ -94,7 +82,7 @@ export const getFeaturedWatches = asyncHandler(async (req: Request, res: Respons
 
 export const getWatchById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const id = req.params.id as string;
-  const watch = db.getWatchById(id);
+  const watch = await Watch.findOne({ id });
 
   if (!watch) {
     return next(new ApiError(404, `Watch with ID ${id} not found.`));
@@ -113,7 +101,7 @@ export const createWatch = asyncHandler(async (req: Request, res: Response, next
     return next(new ApiError(400, 'Name, brand, and price are required.'));
   }
 
-  const newWatch: IWatch = {
+  const newWatch = {
     id: `watch_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     name: watchData.name,
     brand: watchData.brand,
@@ -141,7 +129,7 @@ export const createWatch = asyncHandler(async (req: Request, res: Response, next
     updatedAt: new Date().toISOString(),
   };
 
-  db.addWatch(newWatch);
+  await Watch.create(newWatch);
 
   res.status(201).json({
     success: true,
@@ -153,13 +141,13 @@ export const createWatch = asyncHandler(async (req: Request, res: Response, next
 export const updateWatch = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const id = req.params.id as string;
   const updates = req.body;
+  updates.updatedAt = new Date().toISOString();
 
-  const existingWatch = db.getWatchById(id);
-  if (!existingWatch) {
+  const updatedWatch = await Watch.findOneAndUpdate({ id }, updates, { new: true });
+
+  if (!updatedWatch) {
     return next(new ApiError(404, `Watch with ID ${id} not found.`));
   }
-
-  const updatedWatch = db.updateWatch(id, updates);
 
   res.status(200).json({
     success: true,
@@ -170,9 +158,9 @@ export const updateWatch = asyncHandler(async (req: Request, res: Response, next
 
 export const deleteWatch = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const id = req.params.id as string;
-  const success = db.deleteWatch(id);
+  const deletedWatch = await Watch.findOneAndDelete({ id });
 
-  if (!success) {
+  if (!deletedWatch) {
     return next(new ApiError(404, `Watch with ID ${id} not found.`));
   }
 

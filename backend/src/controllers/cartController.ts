@@ -1,12 +1,20 @@
 import { Response, NextFunction } from 'express';
-import { db } from '../data/db.js';
+import { Cart, Watch } from '../models/index.js';
 import { AuthRequest } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
 export const getCart = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user) return next(new ApiError(401, 'Not authenticated.'));
 
-  const cart = db.getCartByUserId(req.user.id);
+  let cart = await Cart.findOne({ userId: req.user.id });
+  if (!cart) {
+    cart = await Cart.create({
+      userId: req.user.id,
+      items: [],
+      totalAmount: 0,
+      updatedAt: new Date().toISOString(),
+    });
+  }
 
   res.status(200).json({
     success: true,
@@ -23,12 +31,21 @@ export const addToCart = asyncHandler(async (req: AuthRequest, res: Response, ne
     return next(new ApiError(400, 'Watch ID is required.'));
   }
 
-  const watch = db.getWatchById(watchId);
+  const watch = await Watch.findOne({ id: watchId });
   if (!watch) {
     return next(new ApiError(404, 'Watch not found.'));
   }
 
-  const cart = db.getCartByUserId(req.user.id);
+  let cart = await Cart.findOne({ userId: req.user.id });
+  if (!cart) {
+    cart = await Cart.create({
+      userId: req.user.id,
+      items: [],
+      totalAmount: 0,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
   const existingItemIndex = cart.items.findIndex((item) => item.watchId === watchId);
 
   if (existingItemIndex > -1) {
@@ -43,12 +60,15 @@ export const addToCart = asyncHandler(async (req: AuthRequest, res: Response, ne
     });
   }
 
-  const updatedCart = db.saveCart(cart);
+  cart.totalAmount = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  cart.updatedAt = new Date().toISOString();
+
+  await cart.save();
 
   res.status(200).json({
     success: true,
     message: 'Item added to cart.',
-    cart: updatedCart,
+    cart,
   });
 });
 
@@ -62,7 +82,9 @@ export const updateCartItemQuantity = asyncHandler(async (req: AuthRequest, res:
     return next(new ApiError(400, 'Valid quantity is required.'));
   }
 
-  const cart = db.getCartByUserId(req.user.id);
+  const cart = await Cart.findOne({ userId: req.user.id });
+  if (!cart) return next(new ApiError(404, 'Cart not found.'));
+
   const qty = Number(quantity);
 
   if (qty <= 0) {
@@ -75,12 +97,15 @@ export const updateCartItemQuantity = asyncHandler(async (req: AuthRequest, res:
     cart.items[itemIndex].quantity = qty;
   }
 
-  const updatedCart = db.saveCart(cart);
+  cart.totalAmount = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  cart.updatedAt = new Date().toISOString();
+
+  await cart.save();
 
   res.status(200).json({
     success: true,
     message: 'Cart updated.',
-    cart: updatedCart,
+    cart,
   });
 });
 
@@ -88,28 +113,37 @@ export const removeFromCart = asyncHandler(async (req: AuthRequest, res: Respons
   if (!req.user) return next(new ApiError(401, 'Not authenticated.'));
 
   const watchId = req.params.watchId as string;
-  const cart = db.getCartByUserId(req.user.id);
+  const cart = await Cart.findOne({ userId: req.user.id });
+  if (!cart) return next(new ApiError(404, 'Cart not found.'));
 
   cart.items = cart.items.filter((item) => item.watchId !== watchId);
-  const updatedCart = db.saveCart(cart);
+  cart.totalAmount = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  cart.updatedAt = new Date().toISOString();
+
+  await cart.save();
 
   res.status(200).json({
     success: true,
     message: 'Item removed from cart.',
-    cart: updatedCart,
+    cart,
   });
 });
 
 export const clearCart = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user) return next(new ApiError(401, 'Not authenticated.'));
 
-  const cart = db.getCartByUserId(req.user.id);
+  const cart = await Cart.findOne({ userId: req.user.id });
+  if (!cart) return next(new ApiError(404, 'Cart not found.'));
+
   cart.items = [];
-  const updatedCart = db.saveCart(cart);
+  cart.totalAmount = 0;
+  cart.updatedAt = new Date().toISOString();
+
+  await cart.save();
 
   res.status(200).json({
     success: true,
     message: 'Cart cleared.',
-    cart: updatedCart,
+    cart,
   });
 });

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { db } from '../data/db.js';
+import { User } from '../models/index.js';
 import { AuthRequest, IUser } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
@@ -19,7 +19,7 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response, nex
     return next(new ApiError(400, 'Please provide name, email, and password.'));
   }
 
-  const existingUser = db.getUserByEmail(email);
+  const existingUser = await User.findOne({ email });
   if (existingUser) {
     return next(new ApiError(400, 'User with this email already exists.'));
   }
@@ -27,21 +27,22 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response, nex
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  const newUser: IUser = {
+  const newUser = {
     id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     name,
     email,
     passwordHash,
-    role: 'customer',
+    role: 'customer' as const,
     avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
-  db.addUser(newUser);
+  const createdUser = await User.create(newUser as any);
 
-  const token = generateToken(newUser.id, newUser.email, newUser.role);
-  const { passwordHash: _, ...userWithoutPassword } = newUser;
+  const token = generateToken(createdUser.id, createdUser.email, createdUser.role);
+  const userObj = (createdUser as any).toObject();
+  const { passwordHash: _, ...userWithoutPassword } = userObj;
 
   res.status(201).json({
     success: true,
@@ -58,7 +59,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response, next: 
     return next(new ApiError(400, 'Please provide email and password.'));
   }
 
-  const user = db.getUserByEmail(email);
+  const user = await User.findOne({ email });
   if (!user) {
     return next(new ApiError(401, 'Invalid email or password.'));
   }
@@ -69,7 +70,8 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response, next: 
   }
 
   const token = generateToken(user.id, user.email, user.role);
-  const { passwordHash: _, ...userWithoutPassword } = user;
+  const userObj = (user as any).toObject();
+  const { passwordHash: _, ...userWithoutPassword } = userObj;
 
   res.status(200).json({
     success: true,
@@ -84,12 +86,13 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response, next: 
     return next(new ApiError(401, 'Not authenticated.'));
   }
 
-  const user = db.getUserById(req.user.id);
+  const user = await User.findOne({ id: req.user.id });
   if (!user) {
     return next(new ApiError(404, 'User not found.'));
   }
 
-  const { passwordHash: _, ...userWithoutPassword } = user;
+  const userObj = (user as any).toObject();
+  const { passwordHash: _, ...userWithoutPassword } = userObj;
 
   res.status(200).json({
     success: true,
@@ -103,16 +106,17 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
   }
 
   const { name, avatar } = req.body;
-  const updates: Partial<IUser> = {};
+  const updates: Partial<IUser> = { updatedAt: new Date().toISOString() };
   if (name) updates.name = name;
   if (avatar) updates.avatar = avatar;
 
-  const updatedUser = db.updateUser(req.user.id, updates);
+  const updatedUser = await User.findOneAndUpdate({ id: req.user.id }, updates, { new: true });
   if (!updatedUser) {
     return next(new ApiError(404, 'User not found.'));
   }
 
-  const { passwordHash: _, ...userWithoutPassword } = updatedUser;
+  const userObj = (updatedUser as any).toObject();
+  const { passwordHash: _, ...userWithoutPassword } = userObj;
 
   res.status(200).json({
     success: true,

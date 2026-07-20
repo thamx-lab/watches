@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { db } from '../data/db.js';
-import { AuthRequest, IOrder, IOrderItem } from '../types/index.js';
+import { Order, Cart } from '../models/index.js';
+import { AuthRequest } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
 
 export const createOrder = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -8,16 +8,16 @@ export const createOrder = asyncHandler(async (req: AuthRequest, res: Response, 
 
   const { items, shippingAddress, paymentMethod = 'Credit Card' } = req.body;
 
-  let orderItems: IOrderItem[] = [];
+  let orderItems: any[] = [];
 
   if (items && items.length > 0) {
     orderItems = items;
   } else {
-    const cart = db.getCartByUserId(req.user.id);
-    if (cart.items.length === 0) {
+    const cart = await Cart.findOne({ userId: req.user.id });
+    if (!cart || cart.items.length === 0) {
       return next(new ApiError(400, 'Your cart is empty.'));
     }
-    orderItems = cart.items.map((ci) => ({
+    orderItems = cart.items.map((ci: any) => ({
       watchId: ci.watchId,
       name: ci.watchName,
       price: ci.price,
@@ -35,7 +35,7 @@ export const createOrder = asyncHandler(async (req: AuthRequest, res: Response, 
   const shippingFee = subtotal > 5000 ? 0 : 150;
   const totalAmount = Number((subtotal + tax + shippingFee).toFixed(2));
 
-  const newOrder: IOrder = {
+  const newOrder = {
     id: `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     userId: req.user.id,
     items: orderItems,
@@ -45,16 +45,14 @@ export const createOrder = asyncHandler(async (req: AuthRequest, res: Response, 
     tax,
     shippingFee,
     totalAmount,
-    status: 'pending',
+    status: 'pending' as const,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
-  db.addOrder(newOrder);
+  await Order.create(newOrder as any);
 
-  const cart = db.getCartByUserId(req.user.id);
-  cart.items = [];
-  db.saveCart(cart);
+  await Cart.findOneAndUpdate({ userId: req.user.id }, { items: [], totalAmount: 0, updatedAt: new Date().toISOString() });
 
   res.status(201).json({
     success: true,
@@ -66,7 +64,7 @@ export const createOrder = asyncHandler(async (req: AuthRequest, res: Response, 
 export const getMyOrders = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user) return next(new ApiError(401, 'Not authenticated.'));
 
-  const orders = db.getOrdersByUserId(req.user.id);
+  const orders = await Order.find({ userId: req.user.id });
 
   res.status(200).json({
     success: true,
@@ -79,7 +77,7 @@ export const getOrderById = asyncHandler(async (req: AuthRequest, res: Response,
   if (!req.user) return next(new ApiError(401, 'Not authenticated.'));
 
   const id = req.params.id as string;
-  const order = db.getOrderById(id);
+  const order = await Order.findOne({ id });
 
   if (!order) {
     return next(new ApiError(404, `Order with ID ${id} not found.`));
@@ -96,7 +94,7 @@ export const getOrderById = asyncHandler(async (req: AuthRequest, res: Response,
 });
 
 export const getAllOrders = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const orders = db.getOrders();
+  const orders = await Order.find();
 
   res.status(200).json({
     success: true,
@@ -114,7 +112,12 @@ export const updateOrderStatus = asyncHandler(async (req: AuthRequest, res: Resp
     return next(new ApiError(400, `Invalid status. Must be one of: ${validStatuses.join(', ')}`));
   }
 
-  const updatedOrder = db.updateOrderStatus(id, status);
+  const updatedOrder = await Order.findOneAndUpdate(
+    { id },
+    { status, updatedAt: new Date().toISOString() },
+    { new: true }
+  );
+
   if (!updatedOrder) {
     return next(new ApiError(404, `Order with ID ${id} not found.`));
   }

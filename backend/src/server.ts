@@ -9,7 +9,11 @@ import apiRoutes from './routes/index.js';
 import { ApiError } from './utils/apiError.js';
 import { logger } from './utils/logger.js';
 
+import { connectDB } from './data/db.js';
+
 dotenv.config();
+
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
