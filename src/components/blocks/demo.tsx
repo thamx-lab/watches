@@ -2,28 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import ScrollExpandMedia from '@/components/ui/scroll-expansion-hero';
+import { getWatches, WatchData } from '@/lib/api';
 
-interface MediaAbout {
-  overview: string;
-  conclusion: string;
-}
-
-interface MediaContent {
-  src: string;
-  poster?: string;
-  background: string;
-  title: string;
-  date: string;
-  scrollToExpand: string;
-  about: MediaAbout;
-}
-
-interface MediaContentCollection {
-  [key: string]: MediaContent;
-}
-
-const sampleMediaContent: MediaContentCollection = {
+const sampleMediaContent: Record<string, WatchData> = {
   classic: {
+    id: 'classic',
     src: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1280&auto=format&fit=crop',
     background: 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=1920&auto=format&fit=crop',
     title: 'Classic Heritage',
@@ -35,6 +18,7 @@ const sampleMediaContent: MediaContentCollection = {
     },
   },
   modern: {
+    id: 'modern',
     src: 'https://images.unsplash.com/photo-1548169874-531866cb2832?q=80&w=1280&auto=format&fit=crop',
     background: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1920&auto=format&fit=crop',
     title: 'Modern Elegance',
@@ -47,57 +31,78 @@ const sampleMediaContent: MediaContentCollection = {
   },
 };
 
-const MediaContent = ({ themeKey }: { themeKey: 'classic' | 'modern' }) => {
-  const currentMedia = sampleMediaContent[themeKey];
-
+const MediaContent = ({ data }: { data: WatchData }) => {
   return (
     <div className='max-w-4xl mx-auto'>
       <h2 className='text-3xl font-bold mb-6 text-black dark:text-white'>
         About This Timepiece
       </h2>
       <p className='text-lg mb-8 text-black dark:text-white'>
-        {currentMedia.about.overview}
+        {data.about.overview}
       </p>
       <p className='text-lg mb-8 text-black dark:text-white'>
-        {currentMedia.about.conclusion}
+        {data.about.conclusion}
       </p>
     </div>
   );
 };
 
 const Demo = () => {
-  const [themeKey, setThemeKey] = useState<'classic' | 'modern'>('classic');
-  const currentMedia = sampleMediaContent[themeKey];
+  const [themeKey, setThemeKey] = useState<string>('classic');
+  const [watches, setWatches] = useState<Record<string, WatchData>>(sampleMediaContent);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch from Backend on Mount
+  useEffect(() => {
+    async function loadWatches() {
+      const data = await getWatches();
+      if (data) {
+        setWatches(data);
+        // Automatically select the first key if classic doesn't exist in backend response
+        if (!data['classic']) {
+          setThemeKey(Object.keys(data)[0]);
+        }
+      }
+      setIsLoading(false);
+    }
+    loadWatches();
+  }, []);
+
+  const currentMedia = watches[themeKey];
 
   useEffect(() => {
+    if (isLoading || !currentMedia) return;
     window.scrollTo(0, 0);
     const resetEvent = new Event('resetSection');
     window.dispatchEvent(resetEvent);
-  }, [themeKey]);
+  }, [themeKey, isLoading, currentMedia]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white">Loading watch collections...</div>
+      </div>
+    );
+  }
+
+  if (!currentMedia) return null;
 
   return (
     <div className='min-h-screen bg-black text-white'>
       <div className='fixed top-4 right-4 z-50 flex gap-2'>
-        <button
-          onClick={() => setThemeKey('classic')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            themeKey === 'classic'
-              ? 'bg-white text-black font-semibold'
-              : 'bg-black/50 text-white border border-white/30 hover:bg-white/10'
-          }`}
-        >
-          Classic
-        </button>
-        <button
-          onClick={() => setThemeKey('modern')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            themeKey === 'modern'
-              ? 'bg-white text-black font-semibold'
-              : 'bg-black/50 text-white border border-white/30 hover:bg-white/10'
-          }`}
-        >
-          Modern
-        </button>
+        {Object.keys(watches).map((key) => (
+          <button
+            key={key}
+            onClick={() => setThemeKey(key)}
+            className={`px-4 py-2 rounded-lg transition-colors capitalize ${
+              themeKey === key
+                ? 'bg-white text-black font-semibold'
+                : 'bg-black/50 text-white border border-white/30 hover:bg-white/10'
+            }`}
+          >
+            {key}
+          </button>
+        ))}
       </div>
 
       <ScrollExpandMedia
@@ -109,7 +114,7 @@ const Demo = () => {
         scrollToExpand={currentMedia.scrollToExpand}
         textBlend={false}
       >
-        <MediaContent themeKey={themeKey} />
+        <MediaContent data={currentMedia} />
       </ScrollExpandMedia>
     </div>
   );
