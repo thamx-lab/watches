@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import ScrollExpandMedia from '@/components/ui/scroll-expansion-hero';
 import { getWatches, WatchData } from '@/lib/api';
+import VIPConsultationModal from '@/components/ui/vip-consultation-modal';
+import AIDossierModal from '@/components/ui/ai-dossier-modal';
+import CollectorClubSection from '@/components/ui/collector-club-section';
 import { 
   ShieldCheck, 
   Compass, 
@@ -13,7 +16,9 @@ import {
   Award, 
   Flame,
   Layers,
-  Wrench
+  Wrench,
+  FileDown,
+  Calendar
 } from 'lucide-react';
 
 const sampleMediaContent: Record<string, WatchData> = {
@@ -129,7 +134,13 @@ const getFeatureIcon = (iconName?: string) => {
   }
 };
 
-const MediaContent = ({ data }: { data: WatchData }) => {
+interface MediaContentProps {
+  data: WatchData;
+  onOpenConsultation: () => void;
+  onOpenDossier: () => void;
+}
+
+const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentProps) => {
   return (
     <div className='max-w-5xl mx-auto space-y-16 text-white text-left py-4'>
       {/* Header & Tagline */}
@@ -145,6 +156,25 @@ const MediaContent = ({ data }: { data: WatchData }) => {
         <p className='text-lg md:text-xl text-zinc-300 leading-relaxed font-light'>
           {data.about.overview}
         </p>
+
+        {/* AI Action Triggers */}
+        <div className="pt-4 flex flex-wrap justify-center gap-4">
+          <button
+            onClick={onOpenDossier}
+            className="px-6 py-3.5 rounded-xl bg-white text-zinc-950 font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2 text-sm shadow-xl"
+          >
+            <FileDown className="w-4 h-4 text-amber-600" />
+            Receive AI Watch Dossier
+          </button>
+
+          <button
+            onClick={onOpenConsultation}
+            className="px-6 py-3.5 rounded-xl bg-amber-400 text-zinc-950 font-bold hover:bg-amber-300 transition-colors flex items-center gap-2 text-sm shadow-xl shadow-amber-500/10"
+          >
+            <Calendar className="w-4 h-4" />
+            Schedule VIP Consultation
+          </button>
+        </div>
       </div>
 
       {/* Heritage & Story Cards */}
@@ -249,6 +279,9 @@ const MediaContent = ({ data }: { data: WatchData }) => {
         </div>
       )}
 
+      {/* AI Collector Club Subscription Section */}
+      <CollectorClubSection />
+
       {/* Conclusion */}
       <div className='p-8 rounded-3xl bg-zinc-900/50 border border-zinc-800 text-center max-w-3xl mx-auto space-y-4'>
         <h4 className='text-2xl font-bold text-white'>The Connoisseur's Choice</h4>
@@ -264,13 +297,14 @@ const Demo = () => {
   const [themeKey, setThemeKey] = useState<string>('classic');
   const [watches, setWatches] = useState<Record<string, WatchData>>(sampleMediaContent);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConsultationOpen, setIsConsultationOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
 
   // Fetch from Backend on Mount
   useEffect(() => {
     async function loadWatches() {
       const data = await getWatches();
       if (data && Object.keys(data).length > 0) {
-        // Merge backend data with local sample data to ensure rich details are present
         const merged: Record<string, WatchData> = {};
         for (const key of Object.keys(data)) {
           merged[key] = {
@@ -344,8 +378,27 @@ const Demo = () => {
         scrollToExpand={currentMedia.scrollToExpand}
         textBlend={false}
       >
-        <MediaContent data={currentMedia} />
+        <MediaContent 
+          data={currentMedia} 
+          onOpenConsultation={() => setIsConsultationOpen(true)}
+          onOpenDossier={() => setIsDossierOpen(true)}
+        />
       </ScrollExpandMedia>
+
+      {/* AI Email Automation Modals */}
+      <VIPConsultationModal
+        isOpen={isConsultationOpen}
+        onClose={() => setIsConsultationOpen(false)}
+        watchTitle={currentMedia.title}
+        watchId={currentMedia.id}
+      />
+
+      <AIDossierModal
+        isOpen={isDossierOpen}
+        onClose={() => setIsDossierOpen(false)}
+        watchTitle={currentMedia.title}
+        watchId={currentMedia.id}
+      />
     </div>
   );
 };
