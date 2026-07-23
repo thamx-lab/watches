@@ -1,3 +1,20 @@
+export interface WatchStory {
+  heritage?: string;
+  craftsmanship?: string;
+  movementDetails?: string;
+}
+
+export interface WatchSpec {
+  label: string;
+  value: string;
+}
+
+export interface WatchFeature {
+  title: string;
+  description: string;
+  icon?: string;
+}
+
 export interface WatchData {
   id: string;
   src: string;
@@ -9,6 +26,10 @@ export interface WatchData {
     overview: string;
     conclusion: string;
   };
+  tagline?: string;
+  story?: WatchStory;
+  specs?: WatchSpec[];
+  features?: WatchFeature[];
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
