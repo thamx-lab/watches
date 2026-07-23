@@ -5,6 +5,8 @@ import ScrollExpandMedia from '@/components/ui/scroll-expansion-hero';
 import { getWatches, WatchData } from '@/lib/api';
 import VIPConsultationModal from '@/components/ui/vip-consultation-modal';
 import AIDossierModal from '@/components/ui/ai-dossier-modal';
+import WristSimulatorModal from '@/components/ui/wrist-simulator-modal';
+import WatchComparatorModal from '@/components/ui/watch-comparator-modal';
 import CollectorClubSection from '@/components/ui/collector-club-section';
 import Navbar from '@/components/ui/navbar';
 import Footer from '@/components/ui/footer';
@@ -25,7 +27,9 @@ import {
   Check,
   Palette,
   Eye,
-  Activity
+  Activity,
+  Watch,
+  Scale
 } from 'lucide-react';
 
 interface ExtendedWatchData extends WatchData {
@@ -409,9 +413,17 @@ interface MediaContentProps {
   data: ExtendedWatchData;
   onOpenConsultation: () => void;
   onOpenDossier: () => void;
+  onOpenSimulator: () => void;
+  onOpenComparator: () => void;
 }
 
-const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentProps) => {
+const MediaContent = ({ 
+  data, 
+  onOpenConsultation, 
+  onOpenDossier,
+  onOpenSimulator,
+  onOpenComparator
+}: MediaContentProps) => {
   const [selectedStrap, setSelectedStrap] = useState(data.straps[0]?.id || '');
   const [activeMediaSrc, setActiveMediaSrc] = useState(data.src);
 
@@ -440,11 +452,11 @@ const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentP
           {data.about.overview}
         </p>
 
-        {/* AI Action Triggers */}
-        <div className="pt-4 flex flex-wrap justify-center gap-4">
+        {/* AI Action Triggers & Step 1, Step 2 Tools */}
+        <div className="pt-4 flex flex-wrap justify-center gap-3">
           <button
             onClick={onOpenDossier}
-            className="px-6 py-3.5 rounded-xl bg-white text-zinc-950 font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2 text-sm shadow-xl cursor-pointer"
+            className="px-5 py-3 rounded-xl bg-white text-zinc-950 font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2 text-xs shadow-xl cursor-pointer"
           >
             <FileDown className="w-4 h-4 text-amber-600" />
             Receive AI Watch Dossier
@@ -452,10 +464,26 @@ const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentP
 
           <button
             onClick={onOpenConsultation}
-            className="px-6 py-3.5 rounded-xl bg-amber-400 text-zinc-950 font-bold hover:bg-amber-300 transition-colors flex items-center gap-2 text-sm shadow-xl shadow-amber-500/10 cursor-pointer"
+            className="px-5 py-3 rounded-xl bg-amber-400 text-zinc-950 font-bold hover:bg-amber-300 transition-colors flex items-center gap-2 text-xs shadow-xl shadow-amber-500/10 cursor-pointer"
           >
             <Calendar className="w-4 h-4" />
-            Schedule VIP Consultation
+            Schedule VIP Viewing
+          </button>
+
+          <button
+            onClick={onOpenSimulator}
+            className="px-5 py-3 rounded-xl bg-zinc-800 text-amber-300 font-bold hover:bg-zinc-700 border border-amber-400/30 transition-colors flex items-center gap-2 text-xs shadow-xl cursor-pointer"
+          >
+            <Watch className="w-4 h-4 text-amber-400" />
+            3D Wrist Fit Simulator
+          </button>
+
+          <button
+            onClick={onOpenComparator}
+            className="px-5 py-3 rounded-xl bg-zinc-800 text-cyan-300 font-bold hover:bg-zinc-700 border border-cyan-400/30 transition-colors flex items-center gap-2 text-xs shadow-xl cursor-pointer"
+          >
+            <Scale className="w-4 h-4 text-cyan-400" />
+            Compare Specs Side-by-Side
           </button>
         </div>
       </div>
@@ -651,6 +679,8 @@ const Demo = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isConsultationOpen, setIsConsultationOpen] = useState(false);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isComparatorOpen, setIsComparatorOpen] = useState(false);
 
   // Fetch from Backend on Mount
   useEffect(() => {
@@ -725,6 +755,8 @@ const Demo = () => {
   }
 
   if (!currentMedia) return null;
+
+  const currentDiameter = currentMedia.specs?.find(s => s.label.toLowerCase().includes('diameter'))?.value || '41mm';
 
   return (
     <div className='min-h-screen bg-black text-white pt-20 flex flex-col justify-between'>
@@ -805,13 +837,15 @@ const Demo = () => {
           data={currentMedia} 
           onOpenConsultation={() => setIsConsultationOpen(true)}
           onOpenDossier={() => setIsDossierOpen(true)}
+          onOpenSimulator={() => setIsSimulatorOpen(true)}
+          onOpenComparator={() => setIsComparatorOpen(true)}
         />
       </ScrollExpandMedia>
 
       {/* Brand Footer */}
       <Footer />
 
-      {/* AI Email Automation Modals */}
+      {/* AI Email Automation & Feature Modals */}
       <VIPConsultationModal
         isOpen={isConsultationOpen}
         onClose={() => setIsConsultationOpen(false)}
@@ -824,6 +858,21 @@ const Demo = () => {
         onClose={() => setIsDossierOpen(false)}
         watchTitle={currentMedia.title}
         watchId={currentMedia.id}
+      />
+
+      <WristSimulatorModal
+        isOpen={isSimulatorOpen}
+        onClose={() => setIsSimulatorOpen(false)}
+        watchTitle={currentMedia.title}
+        watchSrc={currentMedia.src}
+        caseDiameter={currentDiameter}
+      />
+
+      <WatchComparatorModal
+        isOpen={isComparatorOpen}
+        onClose={() => setIsComparatorOpen(false)}
+        allWatches={watches}
+        currentWatchId={currentMedia.id}
       />
     </div>
   );
