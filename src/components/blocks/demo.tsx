@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ScrollExpandMedia from '@/components/ui/scroll-expansion-hero';
 import { getWatches, WatchData } from '@/lib/api';
 import VIPConsultationModal from '@/components/ui/vip-consultation-modal';
 import AIDossierModal from '@/components/ui/ai-dossier-modal';
 import CollectorClubSection from '@/components/ui/collector-club-section';
+import Navbar from '@/components/ui/navbar';
+import Footer from '@/components/ui/footer';
 import { 
   ShieldCheck, 
   Compass, 
@@ -18,12 +20,24 @@ import {
   Layers,
   Wrench,
   FileDown,
-  Calendar
+  Calendar,
+  Search,
+  Check,
+  Palette,
+  Eye,
+  Activity
 } from 'lucide-react';
 
-const sampleMediaContent: Record<string, WatchData> = {
+interface ExtendedWatchData extends WatchData {
+  category: string;
+  straps: { id: string; name: string; material: string; color: string }[];
+  gallery: { label: string; src: string }[];
+}
+
+const sampleMediaContent: Record<string, ExtendedWatchData> = {
   classic: {
     id: 'classic',
+    category: 'Classic',
     src: '/images/sample_watch.jpg',
     background: 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=1920&auto=format&fit=crop',
     title: 'Classic Heritage 1920',
@@ -68,10 +82,21 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Transparent anti-reflective sapphire glass reveals 27 ruby jewels and 22-karat gold winding rotor.',
         icon: 'Award'
       }
+    ],
+    straps: [
+      { id: 'alligator', name: 'Classic Black Alligator', material: 'Hand-Stitched Italian Leather', color: 'bg-zinc-900' },
+      { id: 'brown-leather', name: 'Vintage Chestnut Leather', material: 'Full-Grain Calfskin', color: 'bg-amber-900' },
+      { id: 'steel-link', name: 'Jubilee Steel Bracelet', material: '316L Stainless Steel', color: 'bg-zinc-400' }
+    ],
+    gallery: [
+      { label: 'Front Dial View', src: '/images/sample_watch.jpg' },
+      { label: 'Movement Detail', src: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1280&auto=format&fit=crop' },
+      { label: 'Case Profile', src: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=1280&auto=format&fit=crop' }
     ]
   },
   rosegold: {
     id: 'rosegold',
+    category: 'Complication',
     src: '/images/rose_gold_watch.jpg',
     background: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1920&auto=format&fit=crop',
     title: 'Royal Rose Gold Grand Complication',
@@ -116,10 +141,21 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Non-ferrous movement components ensure flawless timekeeping near magnetic appliances and MRI machines.',
         icon: 'ShieldCheck'
       }
+    ],
+    straps: [
+      { id: 'rose-gold-link', name: '18K Sedna Gold Mesh', material: '18K Solid Rose Gold', color: 'bg-amber-600' },
+      { id: 'dark-navy', name: 'Midnight Navy Alligator', material: 'Genuine Alligator', color: 'bg-blue-950' },
+      { id: 'burgundy', name: 'Royal Burgundy Calfskin', material: 'Tuscan Leather', color: 'bg-rose-950' }
+    ],
+    gallery: [
+      { label: 'Front Dial View', src: '/images/rose_gold_watch.jpg' },
+      { label: 'Moonphase Detail', src: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1280&auto=format&fit=crop' },
+      { label: 'Gold Clasp', src: '/images/rose_gold_watch.jpg' }
     ]
   },
   celestial: {
     id: 'celestial',
+    category: 'Tourbillon',
     src: '/images/blue_luxury_watch.jpg',
     background: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop',
     title: 'Celestial Blue Tourbillon',
@@ -164,10 +200,21 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Heavy gold rim rotor maximizes kinetic energy transfer with every wrist motion.',
         icon: 'Zap'
       }
+    ],
+    straps: [
+      { id: 'blue-alligator', name: 'Azure Blue Crocodile', material: 'Hand-Dyed Crocodile', color: 'bg-blue-900' },
+      { id: 'titanium-mesh', name: 'Grade 5 Titanium Mesh', material: 'Woven Titanium', color: 'bg-zinc-500' },
+      { id: 'black-rubber', name: 'Vulcanized Blue Rubber', material: 'Swiss Elastomer', color: 'bg-cyan-950' }
+    ],
+    gallery: [
+      { label: 'Tourbillon View', src: '/images/blue_luxury_watch.jpg' },
+      { label: 'Enamel Dial', src: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop' },
+      { label: 'Kinetic Rotor', src: '/images/blue_luxury_watch.jpg' }
     ]
   },
   premium: {
     id: 'premium',
+    category: 'Tactical',
     src: '/images/premium_watch.jpg',
     background: 'https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?q=80&w=1920&auto=format&fit=crop',
     title: 'Obsidian Reserve Master',
@@ -212,10 +259,21 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Resistant to UV rays, salt water, and chemical exposure with quick-release spring bars.',
         icon: 'Wrench'
       }
+    ],
+    straps: [
+      { id: 'tactical-fluoro', name: 'Obsidian Fluoroelastomer', material: 'Tactical Viton® Rubber', color: 'bg-zinc-950' },
+      { id: 'carbon-nylon', name: 'Ballistic Carbon Nylon', material: 'Military Cordura®', color: 'bg-stone-900' },
+      { id: 'titanium-dlc', name: 'Matte Black DLC Titanium', material: 'DLC-Coated Titanium', color: 'bg-zinc-800' }
+    ],
+    gallery: [
+      { label: 'Tactical Chrono View', src: '/images/premium_watch.jpg' },
+      { label: 'Forged Carbon Case', src: '/images/premium_watch.jpg' },
+      { label: 'Pusher Mechanism', src: '/images/premium_watch.jpg' }
     ]
   },
   submariner: {
     id: 'submariner',
+    category: 'Diver',
     src: '/images/blue_watch_standing.jpg',
     background: 'https://images.unsplash.com/photo-1682687982501-1e58ab814714?q=80&w=1280&auto=format&fit=crop',
     title: 'Submariner Deep Sea Diver',
@@ -260,10 +318,21 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Adjusts in 2mm increments up to 20mm to fit comfortably over thick neoprene wet suits.',
         icon: 'ShieldCheck'
       }
+    ],
+    straps: [
+      { id: 'ocean-rubber', name: 'Deep Sea Blue Rubber', material: 'Vulcanized Marine Rubber', color: 'bg-blue-800' },
+      { id: 'steel-glidelock', name: '904L Steel Oyster Bracelet', material: 'Marine Grade Steel', color: 'bg-zinc-300' },
+      { id: 'black-diver', name: 'Sub-Zero Black Elastomer', material: 'Hypoallergenic Polymer', color: 'bg-zinc-900' }
+    ],
+    gallery: [
+      { label: 'Submariner Front', src: '/images/blue_watch_standing.jpg' },
+      { label: 'Bezel & Dial', src: '/images/blue_watch_standing.jpg' },
+      { label: 'Helium Valve', src: '/images/blue_watch_standing.jpg' }
     ]
   },
   aviator: {
     id: 'aviator',
+    category: 'Aviator',
     src: '/images/blue_watch_no_stand.jpg',
     background: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1920&auto=format&fit=crop',
     title: 'Aviator Precision GMT Chronometer',
@@ -308,6 +377,16 @@ const sampleMediaContent: Record<string, WatchData> = {
         description: 'Surrounds the movement to isolate delicate balance springs from cockpit electronic interference.',
         icon: 'ShieldCheck'
       }
+    ],
+    straps: [
+      { id: 'pilot-leather', name: 'Cockpit Riveted Calfskin', material: 'Saddle Leather with Steel Rivets', color: 'bg-amber-950' },
+      { id: 'cobalt-nylon', name: 'Aviation Blue NATO Strap', material: 'Reinforced Military Weave', color: 'bg-sky-950' },
+      { id: 'satin-mesh', name: 'Satin Steel Milanese', material: 'Fine Steel Mesh', color: 'bg-zinc-400' }
+    ],
+    gallery: [
+      { label: 'Pilot GMT Dial', src: '/images/blue_watch_no_stand.jpg' },
+      { label: 'Slide Rule Bezel', src: '/images/blue_watch_no_stand.jpg' },
+      { label: 'Cockpit Hands', src: '/images/blue_watch_no_stand.jpg' }
     ]
   },
 };
@@ -327,12 +406,24 @@ const getFeatureIcon = (iconName?: string) => {
 };
 
 interface MediaContentProps {
-  data: WatchData;
+  data: ExtendedWatchData;
   onOpenConsultation: () => void;
   onOpenDossier: () => void;
 }
 
 const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentProps) => {
+  const [selectedStrap, setSelectedStrap] = useState(data.straps[0]?.id || '');
+  const [activeMediaSrc, setActiveMediaSrc] = useState(data.src);
+
+  useEffect(() => {
+    if (data.straps && data.straps.length > 0) {
+      setSelectedStrap(data.straps[0].id);
+    }
+    setActiveMediaSrc(data.src);
+  }, [data]);
+
+  const currentStrapObj = data.straps.find(s => s.id === selectedStrap) || data.straps[0];
+
   return (
     <div className='max-w-5xl mx-auto space-y-16 text-white text-left py-4'>
       {/* Header & Tagline */}
@@ -368,6 +459,73 @@ const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentP
           </button>
         </div>
       </div>
+
+      {/* Multi-Angle Gallery Switcher */}
+      {data.gallery && data.gallery.length > 0 && (
+        <div className="p-6 rounded-3xl bg-zinc-900/40 border border-zinc-800/80 backdrop-blur-xl text-center space-y-4">
+          <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-widest text-zinc-400 font-semibold">
+            <Eye className="w-4 h-4 text-amber-400" /> Multi-Angle Photography Showcase
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {data.gallery.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveMediaSrc(item.src)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                  activeMediaSrc === item.src
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow-lg shadow-amber-500/20'
+                    : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
+                }`}
+              >
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Strap Customizer */}
+      {data.straps && data.straps.length > 0 && (
+        <div className="p-8 rounded-3xl bg-gradient-to-br from-zinc-900/90 to-zinc-950 border border-zinc-800 shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                <Palette className="w-4 h-4" /> Interactive Strap Studio
+              </span>
+              <h3 className="text-xl font-bold text-white mt-1">Custom Strap Selection</h3>
+            </div>
+            {currentStrapObj && (
+              <div className="px-3.5 py-1.5 rounded-full bg-zinc-800 text-amber-300 text-xs font-mono border border-zinc-700 flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Selected: {currentStrapObj.name}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {data.straps.map((strap) => (
+              <button
+                key={strap.id}
+                onClick={() => setSelectedStrap(strap.id)}
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-2 ${
+                  selectedStrap === strap.id
+                    ? 'bg-zinc-800/90 border-amber-400/80 shadow-lg shadow-amber-500/10'
+                    : 'bg-zinc-900/40 border-zinc-800/80 hover:bg-zinc-800/50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={`w-6 h-6 rounded-full border border-white/20 ${strap.color}`} />
+                  {selectedStrap === strap.id && <Check className="w-4 h-4 text-amber-400" />}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">{strap.name}</p>
+                  <p className="text-xs text-zinc-400">{strap.material}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Heritage & Story Cards */}
       {data.story && (
@@ -487,7 +645,9 @@ const MediaContent = ({ data, onOpenConsultation, onOpenDossier }: MediaContentP
 
 const Demo = () => {
   const [themeKey, setThemeKey] = useState<string>('classic');
-  const [watches, setWatches] = useState<Record<string, WatchData>>(sampleMediaContent);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [watches, setWatches] = useState<Record<string, ExtendedWatchData>>(sampleMediaContent);
   const [isLoading, setIsLoading] = useState(true);
   const [isConsultationOpen, setIsConsultationOpen] = useState(false);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
@@ -497,11 +657,14 @@ const Demo = () => {
     async function loadWatches() {
       const data = await getWatches();
       if (data && Object.keys(data).length > 0) {
-        const merged: Record<string, WatchData> = {};
+        const merged: Record<string, ExtendedWatchData> = {};
         for (const key of Object.keys(data)) {
           merged[key] = {
             ...sampleMediaContent[key],
             ...data[key],
+            category: sampleMediaContent[key]?.category || 'Classic',
+            straps: sampleMediaContent[key]?.straps || [],
+            gallery: sampleMediaContent[key]?.gallery || [],
             about: {
               ...sampleMediaContent[key]?.about,
               ...data[key]?.about,
@@ -524,7 +687,27 @@ const Demo = () => {
     loadWatches();
   }, []);
 
-  const currentMedia = watches[themeKey];
+  // Filtered Watches List
+  const filteredWatchKeys = useMemo(() => {
+    return Object.keys(watches).filter((key) => {
+      const item = watches[key];
+      const matchesCat = selectedCategory === 'All' || item.category.toLowerCase() === selectedCategory.toLowerCase();
+      const matchesSearch = searchQuery === '' || 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.tagline?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.specs?.some(s => s.value.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCat && matchesSearch;
+    });
+  }, [watches, selectedCategory, searchQuery]);
+
+  // Keep themeKey valid
+  useEffect(() => {
+    if (filteredWatchKeys.length > 0 && !filteredWatchKeys.includes(themeKey)) {
+      setThemeKey(filteredWatchKeys[0]);
+    }
+  }, [filteredWatchKeys, themeKey]);
+
+  const currentMedia = watches[themeKey] || watches[Object.keys(watches)[0]];
 
   useEffect(() => {
     if (isLoading || !currentMedia) return;
@@ -536,7 +719,7 @@ const Demo = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-pulse text-white">Loading watch collections...</div>
+        <div className="animate-pulse text-white font-mono text-sm">Loading Luxury Horology Collections...</div>
       </div>
     );
   }
@@ -544,23 +727,71 @@ const Demo = () => {
   if (!currentMedia) return null;
 
   return (
-    <div className='min-h-screen bg-black text-white'>
-      <div className='fixed top-4 right-4 z-50 flex flex-wrap gap-2 max-w-xl justify-end'>
-        {Object.keys(watches).map((key) => (
-          <button
-            key={key}
-            onClick={() => setThemeKey(key)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all capitalize shadow-md cursor-pointer ${
-              themeKey === key
-                ? 'bg-white text-black scale-105 shadow-xl'
-                : 'bg-black/60 text-white border border-white/20 hover:bg-white/10 backdrop-blur-md'
-            }`}
-          >
-            {key}
-          </button>
-        ))}
+    <div className='min-h-screen bg-black text-white pt-20 flex flex-col justify-between'>
+      {/* Sticky Glassmorphic Navbar */}
+      <Navbar
+        onOpenConsultation={() => setIsConsultationOpen(true)}
+        onSelectCategory={(cat) => setSelectedCategory(cat)}
+      />
+
+      {/* Filter & Search Toolbar */}
+      <div className="max-w-5xl mx-auto w-full px-6 pt-6 pb-2">
+        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+            {['All', 'Classic', 'Complication', 'Tourbillon', 'Tactical', 'Diver', 'Aviator'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow-md shadow-amber-500/10'
+                    : 'bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search specs, caliber, gold..."
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 text-xs focus:outline-none focus:border-amber-500/50"
+            />
+          </div>
+        </div>
+
+        {/* Watch Selector Buttons */}
+        <div className="flex items-center gap-2 overflow-x-auto py-4 scrollbar-none">
+          {filteredWatchKeys.length === 0 ? (
+            <p className="text-xs text-zinc-500 py-2">No watch timepieces found matching your search.</p>
+          ) : (
+            filteredWatchKeys.map((key) => (
+              <button
+                key={key}
+                onClick={() => setThemeKey(key)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                  themeKey === key
+                    ? 'bg-white text-black scale-105 shadow-xl shadow-white/10'
+                    : 'bg-zinc-900/80 text-zinc-300 border border-zinc-800 hover:bg-zinc-800'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5 text-amber-500" />
+                <span>{watches[key].title}</span>
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
+      {/* Hero & Story Presentation */}
       <ScrollExpandMedia
         mediaType="image"
         mediaSrc={currentMedia.src}
@@ -576,6 +807,9 @@ const Demo = () => {
           onOpenDossier={() => setIsDossierOpen(true)}
         />
       </ScrollExpandMedia>
+
+      {/* Brand Footer */}
+      <Footer />
 
       {/* AI Email Automation Modals */}
       <VIPConsultationModal
