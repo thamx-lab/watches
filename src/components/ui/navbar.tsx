@@ -18,7 +18,7 @@ export default function Navbar({ onOpenConsultation, onSelectCategory }: NavbarP
           </div>
           <div>
             <span className="text-lg font-black tracking-wider text-white uppercase block leading-none">
-              Aura <span className="text-amber-400 font-light">Horology</span>
+              Mankind <span className="text-amber-400 font-light">Horology</span>
             </span>
             <span className="text-[10px] tracking-widest uppercase text-zinc-400 font-mono">
               Haute Horlogerie • Geneva

@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="space-y-4 md:col-span-1">
           <div className="flex items-center gap-2 text-white font-bold tracking-wider uppercase text-lg">
             <Sparkles className="w-5 h-5 text-amber-400" />
-            <span>Aura Horology</span>
+            <span>Mankind Horology</span>
           </div>
           <p className="text-xs text-zinc-500 leading-relaxed">
             Pioneering Swiss mechanical precision, aerospace materials, and grand complications since 1920. Handcrafted in Geneva for discerning collectors worldwide.
@@ -52,14 +52,14 @@ export default function Footer() {
             Our n8n-powered AI email concierge is available 24/7 to dispatch technical dossiers, certificates of authenticity, and private viewing schedules.
           </p>
           <div className="space-y-1 text-xs text-zinc-300 font-mono">
-            <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-amber-400" /> concierge@aurahorology.com</div>
+            <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-amber-400" /> concierge@mankindhorology.com</div>
             <div className="flex items-center gap-2"><Globe className="w-3.5 h-3.5 text-amber-400" /> Direct n8n Automation Sync</div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-zinc-900/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
-        <p>© {new Date().getFullYear()} Aura Horology SA. All Rights Reserved. Crafted with Next.js & n8n AI Automation.</p>
+        <p>© {new Date().getFullYear()} Mankind Horology SA. All Rights Reserved. Crafted with Next.js & n8n AI Automation.</p>
         <div className="flex items-center gap-6">
           <span className="hover:text-zinc-400 transition-colors cursor-pointer">Privacy Policy</span>
           <span className="hover:text-zinc-400 transition-colors cursor-pointer">Terms of Service</span>

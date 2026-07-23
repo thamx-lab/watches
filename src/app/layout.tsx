@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aura Timepieces | Premium Luxury Watches",
+  title: "Mankind Timepieces | Premium Luxury Watches",
   description: "Experience the pinnacle of horological engineering. Premium luxury watches crafted for the modern era.",
 };
 
