@@ -43,6 +43,7 @@ export interface InquiryPayload {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/watch-inquiry';
 
 /**
  * Fetches the watches from the backend.
@@ -68,11 +69,32 @@ export async function getWatches(): Promise<Record<string, WatchData> | null> {
 }
 
 /**
- * Submits an email inquiry / VIP reservation / AI dossier request to the backend or direct webhook.
+ * Submits an email inquiry / VIP reservation / AI dossier request directly to n8n webhook and/or backend API.
  */
 export async function sendInquiry(payload: InquiryPayload): Promise<{ success: boolean; message: string }> {
+  let sentDirectlyToN8n = false;
+
+  // 1. Try sending directly to n8n AI Automation Webhook Engine
   try {
-    // 1. Try sending to the backend /inquiries endpoint
+    const n8nRes = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...payload,
+        submittedAt: new Date().toISOString(),
+        source: 'Mankind Horology Web Frontend',
+      }),
+    });
+    if (n8nRes.ok) {
+      sentDirectlyToN8n = true;
+      console.log(`[n8n AI Engine] Payload successfully delivered to n8n webhook: ${N8N_WEBHOOK_URL}`);
+    }
+  } catch (n8nErr) {
+    console.warn(`[n8n AI Engine] Direct webhook unreachable at ${N8N_WEBHOOK_URL}. Attempting backend API dispatch.`, n8nErr);
+  }
+
+  // 2. Try sending to the backend /inquiries endpoint
+  try {
     const response = await fetch(`${API_BASE_URL}/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -87,12 +109,14 @@ export async function sendInquiry(payload: InquiryPayload): Promise<{ success: b
       };
     }
   } catch (error) {
-    console.warn('Backend inquiry endpoint unreachable, attempting local/fallback response.', error);
+    console.warn('Backend inquiry endpoint unreachable, using direct n8n or fallback response.', error);
   }
 
-  // Graceful fallback for static site / offline mode
+  // 3. If direct n8n webhook succeeded or offline fallback
   return {
     success: true,
-    message: 'Thank you! Your AI Email Automation request has been received. Check your inbox shortly for confirmation.',
+    message: sentDirectlyToN8n 
+      ? 'Successfully connected to n8n AI Engine! Check your email inbox shortly.' 
+      : 'Thank you! Your AI Email Automation request has been received. Check your inbox shortly for confirmation.',
   };
 }
