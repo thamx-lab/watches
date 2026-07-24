@@ -16,3 +16,15 @@ services:
         generateValue: true
       - key: CORS_ORIGIN
         sync: false
+
+  - type: web
+    name: luxury-watches-frontend
+    env: node
+    rootDir: front
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
