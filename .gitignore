@@ -4,3 +4,5 @@ dist/
 .env.local
 .next/
 backend/data/store.json
+.n8n/
+

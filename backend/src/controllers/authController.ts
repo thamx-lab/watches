@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import { AuthRequest, IUser } from '../types/index.js';
 import { ApiError, asyncHandler } from '../utils/apiError.js';
+import { sendN8nWebhook } from '../utils/n8nWebhook.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'luxury_watches_super_secret_jwt_key_2026';
 const JWT_EXPIRES_IN = '7d';
@@ -40,6 +41,9 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response, nex
 
   const createdUser = await User.create(newUser as any);
 
+  // Trigger n8n Webhook for registration
+  sendN8nWebhook('register', { name: createdUser.name, email: createdUser.email });
+
   const token = generateToken(createdUser.id, createdUser.email, createdUser.role);
   const userObj = (createdUser as any).toObject();
   const { passwordHash: _, ...userWithoutPassword } = userObj;
@@ -68,6 +72,9 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response, next: 
   if (!isMatch) {
     return next(new ApiError(401, 'Invalid email or password.'));
   }
+
+  // Trigger n8n Webhook for login
+  sendN8nWebhook('login', { name: user.name, email: user.email });
 
   const token = generateToken(user.id, user.email, user.role);
   const userObj = (user as any).toObject();
