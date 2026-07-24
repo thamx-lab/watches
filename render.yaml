@@ -3,7 +3,7 @@ services:
     name: luxury-watches-backend
     env: node
     rootDir: backend
-    buildCommand: npm install --no-package-lock && npm run build
+    buildCommand: npx --yes pnpm@9.15.4 install --no-frozen-lockfile && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
@@ -22,7 +22,7 @@ services:
     name: luxury-watches-frontend
     env: node
     rootDir: front
-    buildCommand: npm install --no-package-lock && npm run build
+    buildCommand: npx --yes pnpm@9.15.4 install --no-frozen-lockfile && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
