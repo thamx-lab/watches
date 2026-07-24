@@ -3,7 +3,7 @@ services:
     name: luxury-watches-backend
     env: node
     rootDir: backend
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install --include=dev --engine-strict=false && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -21,7 +21,7 @@ services:
     name: luxury-watches-frontend
     env: node
     rootDir: front
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --engine-strict=false && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
