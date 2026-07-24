@@ -9,7 +9,7 @@ export const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/luxury_watches');
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error: any) {
-    logger.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1);
+    logger.warn(`MongoDB Connection Warning: ${error.message}`);
+    logger.warn(`Ensure MONGODB_URI is set in Render environment variables for MongoDB Atlas.`);
   }
 };
