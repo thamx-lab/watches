@@ -79,12 +79,18 @@ export default function WristSimulatorModal({
                 style={{ transform: `scale(${relativeScale})` }}
               >
                 <div className="w-32 h-32 relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-                  <Image
-                    src={watchSrc}
-                    alt={watchTitle}
-                    fill
-                    className="object-cover"
-                  />
+                  {watchSrc && typeof watchSrc === 'string' && watchSrc.trim() !== '' ? (
+                    <Image
+                      src={watchSrc}
+                      alt={watchTitle || 'Watch'}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-xs text-zinc-500 font-mono">
+                      [ Watch ]
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

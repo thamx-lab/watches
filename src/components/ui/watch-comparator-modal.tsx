@@ -95,7 +95,11 @@ export default function WatchComparatorModal({
                 {selectedWatches.map((w) => (
                   <th key={w.id} className="p-4 text-center border-l border-zinc-800">
                     <div className="w-20 h-20 relative mx-auto mb-2 rounded-xl overflow-hidden border border-zinc-700">
-                      <Image src={w.src} alt={w.title} fill className="object-cover" />
+                      {w.src && typeof w.src === 'string' && w.src.trim() !== '' ? (
+                        <Image src={w.src} alt={w.title || 'Watch'} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">Watch</div>
+                      )}
                     </div>
                     <p className="text-sm font-bold text-white leading-tight">{w.title}</p>
                     <span className="text-[10px] text-amber-400 font-mono">{w.date}</span>

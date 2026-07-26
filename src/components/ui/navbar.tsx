@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, Compass, Calendar, Shield } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, Calendar, User } from 'lucide-react';
 
 interface NavbarProps {
   onOpenConsultation: () => void;
@@ -41,6 +42,14 @@ export default function Navbar({ onOpenConsultation, onSelectCategory }: NavbarP
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 font-semibold hover:bg-zinc-800 hover:text-white transition-all text-xs flex items-center gap-1.5 cursor-pointer"
+          >
+            <User className="w-3.5 h-3.5 text-amber-400" />
+            <span>Member Vault Login</span>
+          </Link>
+
           <button
             onClick={onOpenConsultation}
             className="px-4 py-2 rounded-xl bg-amber-400 text-zinc-950 font-bold hover:bg-amber-300 transition-all text-xs flex items-center gap-2 shadow-lg shadow-amber-500/10 cursor-pointer"

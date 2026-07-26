@@ -42,8 +42,20 @@ export interface InquiryPayload {
   preferredDate?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/watch-inquiry';
+const getApiBaseUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes("your-backend-api")) {
+    return envUrl.replace(/\/$/, "");
+  }
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:5000/api`;
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/user-auth';
 
 /**
  * Fetches the watches from the backend.
@@ -60,8 +72,36 @@ export async function getWatches(): Promise<Record<string, WatchData> | null> {
       return null;
     }
 
-    const data = await response.json();
-    return data;
+    const json = await response.json();
+    if (json && Array.isArray(json.watches)) {
+      const mapped: Record<string, WatchData> = {};
+      json.watches.forEach((w: any) => {
+        const key = w.theme || w.id;
+        mapped[key] = {
+          id: w.id,
+          src: w.images?.[0] || '',
+          background: w.images?.[1] || w.images?.[0] || '',
+          title: w.name,
+          date: w.establishedDate || '',
+          scrollToExpand: w.scrollToExpand || 'Scroll to Explore',
+          tagline: w.description || '',
+          specs: [
+            { label: 'Caliber Movement', value: w.movement || '' },
+            { label: 'Case Material', value: w.caseMaterial || '' },
+            { label: 'Strap Material', value: w.strapMaterial || '' },
+            { label: 'Water Resistance', value: w.waterResistance || '' },
+            { label: 'Case Diameter', value: w.caseSize || '' },
+            { label: 'Dial Color', value: w.dialColor || '' },
+          ],
+          about: {
+            overview: w.overview || w.description || '',
+            conclusion: w.conclusion || '',
+          }
+        };
+      });
+      return mapped;
+    }
+    return null;
   } catch (error) {
     console.error('Failed to fetch watches from backend. Is the backend running?', error);
     return null;

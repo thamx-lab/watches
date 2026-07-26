@@ -181,18 +181,22 @@ const ScrollExpandMedia = ({
             animate={{ opacity: 1 - scrollProgress }}
             transition={{ duration: 0.1 }}
           >
-            <Image
-              src={bgImageSrc}
-              alt='Background'
-              width={1920}
-              height={1080}
-              className='w-screen h-screen'
-              style={{
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-              priority
-            />
+            {bgImageSrc && typeof bgImageSrc === 'string' && bgImageSrc.trim() !== '' ? (
+              <Image
+                src={bgImageSrc}
+                alt='Background'
+                width={1920}
+                height={1080}
+                className='w-screen h-screen'
+                style={{
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                }}
+                priority
+              />
+            ) : (
+              <div className='w-screen h-screen bg-gradient-to-b from-neutral-950 via-neutral-900 to-black' />
+            )}
             <div className='absolute inset-0 bg-black/10' />
           </motion.div>
 
@@ -209,7 +213,7 @@ const ScrollExpandMedia = ({
                 }}
               >
                 {mediaType === 'video' ? (
-                  mediaSrc.includes('youtube.com') ? (
+                  mediaSrc && typeof mediaSrc === 'string' && mediaSrc.includes('youtube.com') ? (
                     <div className='relative w-full h-full pointer-events-none'>
                       <iframe
                         width='100%'
@@ -243,8 +247,8 @@ const ScrollExpandMedia = ({
                   ) : (
                     <div className='relative w-full h-full pointer-events-none'>
                       <video
-                        src={mediaSrc}
-                        poster={posterSrc}
+                        src={mediaSrc || undefined}
+                        poster={posterSrc && typeof posterSrc === 'string' && posterSrc.trim() !== '' ? posterSrc : undefined}
                         autoPlay
                         muted
                         loop
@@ -270,13 +274,19 @@ const ScrollExpandMedia = ({
                   )
                 ) : (
                   <div className='relative w-full h-full'>
-                    <Image
-                      src={mediaSrc}
-                      alt={title || 'Media content'}
-                      width={1280}
-                      height={720}
-                      className='w-full h-full object-cover rounded-xl'
-                    />
+                    {mediaSrc && typeof mediaSrc === 'string' && mediaSrc.trim() !== '' ? (
+                      <Image
+                        src={mediaSrc}
+                        alt={title || 'Media content'}
+                        width={1280}
+                        height={720}
+                        className='w-full h-full object-cover rounded-xl'
+                      />
+                    ) : (
+                      <div className='w-full h-full bg-neutral-900 rounded-xl flex items-center justify-center text-neutral-500 font-mono text-xs'>
+                        [ Showcase Image ]
+                      </div>
+                    )}
 
                     <motion.div
                       className='absolute inset-0 bg-black/50 rounded-xl'

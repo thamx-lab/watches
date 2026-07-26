@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, MapPin, Phone, Mail, ShieldCheck, Award, Globe } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, MapPin, Phone, Mail, ShieldCheck, Award, Globe, User } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -47,13 +48,16 @@ export default function Footer() {
 
         {/* Client Care & AI Support */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-white uppercase tracking-widest">Client Services & AI Assistance</h4>
+          <h4 className="text-xs font-semibold text-white uppercase tracking-widest">Client Services & Member Access</h4>
           <p className="text-xs text-zinc-500">
             Our n8n-powered AI email concierge is available 24/7 to dispatch technical dossiers, certificates of authenticity, and private viewing schedules.
           </p>
-          <div className="space-y-1 text-xs text-zinc-300 font-mono">
+          <div className="space-y-2 text-xs text-zinc-300 font-mono pt-1">
             <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-amber-400" /> concierge@mankindhorology.com</div>
             <div className="flex items-center gap-2"><Globe className="w-3.5 h-3.5 text-amber-400" /> Direct n8n Automation Sync</div>
+            <Link href="/login" className="flex items-center gap-2 text-amber-300 hover:underline">
+              <User className="w-3.5 h-3.5 text-amber-400" /> Member Vault Login / Register
+            </Link>
           </div>
         </div>
       </div>
@@ -61,9 +65,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-zinc-900/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
         <p>© {new Date().getFullYear()} Mankind Horology SA. All Rights Reserved. Crafted with Next.js & n8n AI Automation.</p>
         <div className="flex items-center gap-6">
+          <Link href="/login" className="hover:text-zinc-400 transition-colors">Member Login</Link>
           <span className="hover:text-zinc-400 transition-colors cursor-pointer">Privacy Policy</span>
           <span className="hover:text-zinc-400 transition-colors cursor-pointer">Terms of Service</span>
-          <span className="hover:text-zinc-400 transition-colors cursor-pointer">Authenticity Guarantee</span>
         </div>
       </div>
     </footer>
