@@ -12,6 +12,10 @@ export const sendN8nWebhook = (eventType, userData) => {
                 name: userData.name,
                 email: userData.email,
             },
+            subject: eventType === 'register' ? 'Welcome to Mankind Luxury Timepieces' : 'Mankind Account Activity Alert',
+            welcomeNote: eventType === 'register' 
+                ? `Dear ${userData.name},\n\nWelcome to Mankind Horology. Your collector account has been successfully created. Explore our exclusive timepieces and enjoy dedicated concierge support.\n\nWarm regards,\nMankind Timepieces Team`
+                : undefined,
             timestamp: new Date().toISOString(),
         });
         const url = new URL(N8N_WEBHOOK_URL);
