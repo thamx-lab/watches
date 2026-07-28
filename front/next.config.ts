@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
   images: {
@@ -16,7 +15,9 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {
-    root: path.resolve(__dirname, 'front'),
+    // Point turbopack to this directory (front/) as the workspace root
+    // to avoid workspace root confusion from pnpm-lock.yaml in parent dir
+    root: __dirname,
   },
 };
 
