@@ -48,8 +48,12 @@ const getApiBaseUrl = () => {
     return envUrl.replace(/\/$/, "");
   }
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    return `http://${host}:5000/api`;
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    const protocol = window.location.protocol;
+    return `${protocol}//${host}/api`;
   }
   return 'http://localhost:5000/api';
 };

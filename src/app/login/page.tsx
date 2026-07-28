@@ -22,8 +22,13 @@ export default function LoginPage() {
     if (envUrl && !envUrl.includes("your-backend-api")) {
       setApiUrl(envUrl.replace(/\/$/, ""));
     } else if (typeof window !== "undefined") {
-      const host = window.location.hostname || "localhost";
-      setApiUrl(`http://${host}:5000/api`);
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") {
+        setApiUrl("http://localhost:5000/api");
+      } else {
+        const protocol = window.location.protocol;
+        setApiUrl(`${protocol}//${host}/api`);
+      }
     }
   }, []);
 
